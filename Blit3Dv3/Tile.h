@@ -37,7 +37,9 @@ public:
 	int h = 0;			 //Heuristic
 	//priority=level+remaining distance estimate
 	int priority = 0;	 //smaller: higher priority #f
-	Tile* parent = NULL;
+	/*Tile* parent = NULL;*/
+	int xParent = -1;
+	int yParent = -1;
 
 	Tile();
 	~Tile();

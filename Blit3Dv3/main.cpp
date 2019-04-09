@@ -369,8 +369,8 @@ void Draw(void)
 		for (int index = 0; index < map->solutionPath.size(); index++)
 		{
 			spriteList[10]->Blit(
-				map->solutionPath[index]->x * TILE_WIDTH,
-				map->solutionPath[index]->y * TILE_HEIGHT);
+				map->solutionPath[index].x * TILE_WIDTH,
+				map->solutionPath[index].y * TILE_HEIGHT);
 		}
 
 	//if (map->closed_nodes_map.size() > 0)
@@ -435,13 +435,13 @@ void drawMap()
 			else
 			{
 				//draw a the tiles
-				if (NULL == map->map[y][x] || NULL == (int)map->map[y][x]->typeID)
+				if ( NULL == (int)map->map[y][x].typeID)
 				{
 					spriteList[(int)TileEnum::UNTRAVERSABLE]->Blit(x * TILE_WIDTH, y * TILE_HEIGHT);
 				}
 				else
 				{
-					spriteList[(int)(map->map[y][x]->typeID)]->Blit(x * TILE_WIDTH, y * TILE_HEIGHT);
+					spriteList[(int)(map->map[y][x].typeID)]->Blit(x * TILE_WIDTH, y * TILE_HEIGHT);
 				}
 			}
 		}
@@ -641,7 +641,7 @@ void DoMouseButton(int button, int action, int mods)
 		float x = ((int)cursor.x / TILE_WIDTH) * TILE_WIDTH;
 		float y = ((int)cursor.y / TILE_HEIGHT)* TILE_HEIGHT;
 		if ((x >= 0 || x < map->mazWidth) && (y >= 0 || y < map->mazHeight))
-			map->map[y][x]->typeID = TileEnum::UNTRAVERSABLE;
+			map->map[y][x].typeID = TileEnum::UNTRAVERSABLE;
 		//remove any brick under us
 		//for (int b = brickList.size() - 1; b >= 0; --b)
 		//{
@@ -671,7 +671,7 @@ void DoMouseButton(int button, int action, int mods)
 			//	}
 			//}
 		if ((x >= 0 || x < map->mazWidth) && (y >= 0 || y < map->mazHeight))
-			map->map[y][x]->typeID = editBrick;
+			map->map[y][x].typeID = editBrick;
 		//add new brick
 		//Tile *b = new Tile;
 		//b->x = x;
