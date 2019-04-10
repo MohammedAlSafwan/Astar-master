@@ -183,12 +183,12 @@ void initCamera()
 	//camera->minY = blit3D->screenHeight / 2;
 	//camera->maxX = blit3D->screenWidth * 2 - blit3D->screenWidth / 2;
 	//camera->maxY = blit3D->screenHeight / 2 + 400;
-	camera->minX = blit3D->screenWidth / 2;
-	camera->minY = blit3D->screenHeight / 2;
-	camera->maxX = map->mazWidth * TILE_WIDTH;
-	camera->maxY = map->mazHeight * TILE_HEIGHT;
+	camera->minX = (blit3D->screenWidth / 2) - (TILE_WIDTH / 2);
+	camera->minY = (blit3D->screenHeight / 2) - (TILE_HEIGHT / 2);
+	camera->maxX = map->mazWidth * TILE_WIDTH + (blit3D->screenWidth / 2);
+	camera->maxY = map->mazHeight * TILE_HEIGHT + (blit3D->screenHeight / 2);
 
-	camera->PanTo(blit3D->screenWidth / 2, blit3D->screenHeight / 2);
+	//camera->PanTo(blit3D->screenWidth / 2, blit3D->screenHeight / 2);
 	//camera->PanTo(map->rover.x * TILE_WIDTH, map->rover.y * TILE_WIDTH);
 
 }
@@ -224,7 +224,14 @@ void solveMap()
 	//	"Couldn't find the end.";
 	//infoTxt += map->pathFind(map->rover.x,map->rover.y,map->exit.x,map->exit.y);
 	map->aStarPathFind();
-
+	if (map->solutionPath.size() > 0) 
+	{
+		infoTxt = "Done... found a path!";
+	}
+	else 
+	{
+		infoTxt = "Done... no found a path!";
+	}
 	//Finish counting
 	auto finish = std::chrono::high_resolution_clock::now();
 	//Print the time needed to find the game
@@ -351,7 +358,7 @@ void Draw(void)
 		//offX = map->rover.x;
 		//offY = map->rover.y;
 		//Pan the camera to the rover location
-		camera->PanTo(map->rover.x * TILE_WIDTH, map->rover.y * TILE_WIDTH);
+		//camera->PanTo(map->rover.x * TILE_WIDTH, map->rover.y * TILE_WIDTH);
 	}
 
 	//Draw the map.
@@ -368,8 +375,8 @@ void Draw(void)
 		for (int index = 0; index < map->solutionPath.size(); index++)
 		{
 			spriteList[10]->Blit(
-				map->solutionPath[index].x * TILE_WIDTH,
-				map->solutionPath[index].y * TILE_HEIGHT);
+				map->solutionPath[index]->x * TILE_WIDTH,
+				map->solutionPath[index]->y * TILE_HEIGHT);
 		}
 
 	//if (map->closed_nodes_map.size() > 0)
@@ -434,13 +441,13 @@ void drawMap()
 			else
 			{
 				//draw a the tiles
-				if ( NULL == (int)map->map[y][x].typeID)
+				if (NULL == (int)map->map[y][x]->typeID)
 				{
 					spriteList[(int)TileEnum::UNTRAVERSABLE]->Blit(x * TILE_WIDTH, y * TILE_HEIGHT);
 				}
 				else
 				{
-					spriteList[(int)(map->map[y][x].typeID)]->Blit(x * TILE_WIDTH, y * TILE_HEIGHT);
+					spriteList[(int)(map->map[y][x]->typeID)]->Blit(x * TILE_WIDTH, y * TILE_HEIGHT);
 				}
 			}
 		}
@@ -514,21 +521,21 @@ void DoInput(int key, int scancode, int action, int mods)
 		map->SaveMap("level.txt");
 	}
 
-	if (key == GLFW_KEY_W && action == GLFW_RELEASE)
-	{
-		//load!
-		map->LoadMap("Alex_test_map1024.txt");
-	}
-	if (key == GLFW_KEY_E && action == GLFW_RELEASE)
-	{
-		//load!
-		map->LoadMap("Alex_test_map2.txt");
-	}
-	if (key == GLFW_KEY_R && action == GLFW_RELEASE)
-	{
-		//load!
-		map->LoadMap("Alex_test_map3.txt");
-	}
+	//if (key == GLFW_KEY_W && action == GLFW_RELEASE)
+	//{
+	//	//load!
+	//	map->LoadMap("Alex_test_map1024.txt");
+	//}
+	//if (key == GLFW_KEY_E && action == GLFW_RELEASE)
+	//{
+	//	//load!
+	//	map->LoadMap("Alex_test_map2.txt");
+	//}
+	//if (key == GLFW_KEY_R && action == GLFW_RELEASE)
+	//{
+	//	//load!
+	//	map->LoadMap("Alex_test_map3.txt");
+	//}
 
 	if (key == GLFW_KEY_Q && action == GLFW_RELEASE)
 	{
@@ -540,11 +547,23 @@ void DoInput(int key, int scancode, int action, int mods)
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
 		editBrick = TileEnum::TRAVERSABLE;
 	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
-		editBrick = TileEnum::END;
+		editBrick = TileEnum::START;
 	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
-		editBrick = TileEnum::ROVER;
+		editBrick = TileEnum::END;
+	/*	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+			editBrick = TileEnum::PASSED;
+		if (key == GLFW_KEY_6 && action == GLFW_PRESS)
+			editBrick = TileEnum::ROVER;
+		if (key == GLFW_KEY_7 && action == GLFW_PRESS)
+			editBrick = TileEnum::UNKNOWN;*/
 	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
-		editBrick = TileEnum::UNKNOWN;
+		editBrick = TileEnum::SAND;
+	if (key == GLFW_KEY_6 && action == GLFW_PRESS)
+		editBrick = TileEnum::MUD;
+	if (key == GLFW_KEY_7 && action == GLFW_PRESS)
+		editBrick = TileEnum::ROCKY;
+	if (key == GLFW_KEY_8 && action == GLFW_PRESS)
+		editBrick = TileEnum::WATER;
 
 	if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT))
 	{
@@ -640,7 +659,7 @@ void DoMouseButton(int button, int action, int mods)
 		float x = ((int)cursor.x / TILE_WIDTH) * TILE_WIDTH;
 		float y = ((int)cursor.y / TILE_HEIGHT)* TILE_HEIGHT;
 		if ((x >= 0 || x < map->mazWidth) && (y >= 0 || y < map->mazHeight))
-			map->map[y][x].typeID = TileEnum::UNTRAVERSABLE;
+			map->map[y][x]->typeID = TileEnum::UNTRAVERSABLE;
 		//remove any brick under us
 		//for (int b = brickList.size() - 1; b >= 0; --b)
 		//{
@@ -669,8 +688,8 @@ void DoMouseButton(int button, int action, int mods)
 			//		brickList.erase(brickList.begin() + b);
 			//	}
 			//}
-		if ((x >= 0 || x < map->mazWidth) && (y >= 0 || y < map->mazHeight))
-			map->map[y][x].typeID = editBrick;
+		if ((x >= 0 && x < map->mazWidth) && (y >= 0 && y < map->mazHeight))
+			map->map[y][x]->typeID = editBrick;
 		//add new brick
 		//Tile *b = new Tile;
 		//b->x = x;
