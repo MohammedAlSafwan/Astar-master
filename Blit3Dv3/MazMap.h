@@ -1,5 +1,6 @@
 #pragma once
 #include "Tile.h"
+#include "Node.h"
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
@@ -51,36 +52,54 @@ public:
 	void LoadMap(std::string fileName);
 	void SaveMap(std::string fileName);
 
-	std::vector<Tile*> closed_nodes_map; // map of closed (tried-out) nodes
-	std::vector<Tile*> open_nodes_map; // map of open (not-yet-tried) nodes
-	std::vector<std::vector<Tile>> dir_map; // map of directions
-	//static const int dir = 8; // number of possible directions to go at any position
-	//int dx[dir] = { 1, 1, 0, -1, -1, -1, 0, 1 };
-	//int dy[dir] = { 0, 1, 1, 1, 0, -1, -1, -1 };
-	static const int dir = 4; // number of possible directions to go at any position
-	int dx[dir] = { -1, 1, 0, 0 };
-	int dy[dir] = { 0, 0, -1, 1 };
+	std::vector<Node> closed_nodes_map; // map of closed (tried-out) nodes
+	std::vector<Node> open_nodes_map; // map of open (not-yet-tried) nodes
+	//std::vector<std::vector<Tile>> dir_map; // map of directions
+	static const int dir = 8; // number of possible directions to go at any position
+	//int dx[dir] =		{ 1, 1, 0, -1, -1, -1, 0, 1 };
+	int dx[dir] = { -1, 1, 0, 0, -1, 1, -1, 1 };
+	//int dy[dir] =		{ 0, 1, 1, 1, 0, -1, -1, -1 };
+	int dy[dir] = { 0, 0, -1, 1, 1, 1, -1, -1 };
+	float dCost[dir] = { 0, 0, 0, 0, 0.001, 0.001, 0.001, 0.001 };
+	//static const int dir = 4; // number of possible directions to go at any position
+	//int dx[dir] = { -1, 1, 0, 0 };
+	//int dy[dir] = { 0, 0, -1, 1 };
 
 	void MazMap::aStarPathFind();
-	double Heuristic(Tile &a, Tile &b);
+	double Heuristic(Node &a, Node &b);
 
-	bool find(std::vector<Tile*> vec, Tile *tileToFine) {
-		for (Tile* tile : vec) {
-			if (tile->x == tileToFine->x && tile->y == tileToFine->y) return true;
+	bool find(std::vector<Node> vec, Node tileToFine) {
+		for (Node tile : vec) {
+			if (tile.x == tileToFine.x && tile.y == tileToFine.y) return true;
+		}
+		return false;
+	}
+	bool find(std::vector<Node> vec, int x, int y) {
+		for (Node tile : vec) {
+			if (tile.x == x && tile.y == y) return true;
 		}
 		return false;
 	}
 
-	int findTile(std::vector<Tile*> vec, Tile *tileToFine) {
+	int findTile(std::vector<Node> &vec, Node tileToFine) {
 		int index = 0;
-		for (Tile* tile : vec) {
-			if (tile->x == tileToFine->x && tile->y == tileToFine->y) return index;
+		for (Node tile : vec) {
+			if (tile.x == tileToFine.x && tile.y == tileToFine.y) return index;
+			index++;
+		}
+
+		return -1;
+	}
+	int findTile(std::vector<Node> &vec, int x, int y) {
+		int index = 0;
+		for (Node tile : vec) {
+			if (tile.x == x && tile.y == y) return index;
 			index++;
 		}
 
 		return -1;
 	}
 
-	void selectionSort(std::vector<Tile*> &arr, int n);
-	void swap(Tile &xp, Tile &yp);
+	void selectionSort(std::vector<Node> &arr, int n);
+	void swap(Node *xp, Node *yp);
 };

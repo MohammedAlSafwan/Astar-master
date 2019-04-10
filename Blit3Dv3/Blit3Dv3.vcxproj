@@ -184,12 +184,14 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MazMap.cpp" />
+    <ClCompile Include="Node.cpp" />
     <ClCompile Include="Tile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Blit3DBaseFiles\GLEW\GL\glew.h" />
     <ClInclude Include="Blit3DBaseFiles\GLEW\GL\wglew.h" />
     <ClInclude Include="MazMap.h" />
+    <ClInclude Include="Node.h" />
     <ClInclude Include="Tile.h" />
     <ClInclude Include="Camera.h" />
   </ItemGroup>

@@ -93,7 +93,7 @@ void MazMap::LoadMap(std::string fileName)
 		{
 			//init rows
 			std::vector<Tile*> newRow;
-
+			std::vector<Node*> newNodesRow;
 			for (int x = 0; x < mazWidth; x++)
 			{
 				//make a brick
@@ -101,10 +101,6 @@ void MazMap::LoadMap(std::string fileName)
 				B->typeID = TileEnum::TRAVERSABLE;
 				B->x = x;
 				B->y = y;
-				B->g = 0;
-				B->h = 0;
-				B->level = 0;
-				B->priority = 0;
 				newRow.push_back(B);
 			}
 			map.push_back(newRow);
@@ -129,7 +125,6 @@ void MazMap::LoadMap(std::string fileName)
 				break;
 			myfile >> type;
 			map[posY][posX]->typeID = (TileEnum)type;
-
 			switch ((TileEnum)type) {
 			case TileEnum::START:
 				rover.x = posX;
@@ -222,26 +217,30 @@ void MazMap::SaveMap(std::string fileName)
 	}
 }
 
-double MazMap::Heuristic(Tile &a, Tile &b)
+double MazMap::Heuristic(Node &a, Node &b)
 {
 	return abs(b.x - a.x) + abs(b.y - a.y);
 }
 
 void MazMap::aStarPathFind()
 {
-
+	Node current = Node();
+	current.x = rover.x;
+	current.y = rover.y;
+	current.typeID = map[rover.y][rover.x]->typeID;
 	//s.g = 0 (s is the start node)
-	map[rover.y][rover.x]->g = 0;
+	current.g = 0;
 	//s.h = GoalDistEstimate(s)
 	//map[rover.y][rover.x]->h = Heuristic(map[rover.y][rover.x], map[exit.y][exit.x]);
-	map[rover.y][rover.x]->h = abs(map[exit.y][exit.x]->x - map[rover.y][rover.x]->x) + abs(map[exit.y][exit.x]->y - map[rover.y][rover.x]->y);
+	current.h = abs(exit.x - rover.x) + abs(exit.y - rover.y);
 	//s.f = s.g + s.h + envirment cost
-	map[rover.y][rover.x]->priority = map[rover.y][rover.x]->g + map[rover.y][rover.x]->h;//+ ((int)map[rover.y][rover.x]->typeID)
+	current.priority = current.g + current.h;//+ ((int)map[rover.y][rover.x]->typeID)
 	//s.parent = null
-	map[rover.y][rover.x]->parent = NULL;
+	current.xParent = -1;
+	current.yParent = -1;
 
 	//push s on Open
-	open_nodes_map.push_back(map[rover.y][rover.x]);
+	open_nodes_map.push_back(current);
 
 	int counter = 0;
 
@@ -253,19 +252,18 @@ void MazMap::aStarPathFind()
 			break;
 
 		//pop node n from Open  (n has the lowest f)
-		Tile* current = open_nodes_map[0];
+		Node current = open_nodes_map[0];
 		open_nodes_map.erase(open_nodes_map.begin());
 
-		//assert((current->x != 39 || current->y != 2) && "potato");
-
 		//if n is a goal node
-		if (current->x == exit.x && current->y == exit.y)
+		if (current.x == exit.x && current.y == exit.y)
 		{
+			Node temp;
 			//construct path
-			while (current->parent != NULL)
+			while (current.xParent != -1 && current.yParent != -1)
 			{
-				solutionPath.push_back(current);
-				current = current->parent;
+				solutionPath.push_back(map[current.y][current.x]);
+				current = closed_nodes_map[findTile(closed_nodes_map, current.xParent, current.yParent)];
 			}
 			return;
 		}
@@ -273,53 +271,55 @@ void MazMap::aStarPathFind()
 		//for each successor n' of n
 		for (int index = 0; index < dir; index++)
 		{
-			int iDX = (current->x + dx[index]) >= mazWidth ? mazWidth - 1 : (current->x + dx[index]);
+			int iDX = (current.x + dx[index]) >= mazWidth ? mazWidth - 1 : (current.x + dx[index]);
 			iDX = (iDX < 0) ? 0 : iDX;
 
-			int iDY = (current->y + dy[index]) >= mazHeight ? mazHeight - 1 : (current->y + dy[index]);
+			int iDY = (current.y + dy[index]) >= mazHeight ? mazHeight - 1 : (current.y + dy[index]);
 			iDY = (iDY < 0) ? 0 : iDY;
 
-			if (iDX == 39 && iDY == 2)
-			{
-				int x = 0;
-			}
-			//newg = n.g + cost(n,n')
-			double newCost = current->g + (int)map[iDY][iDX]->typeID;
+
 			//if n' is in Open or Closed, and n'.g <= newg
-			if ((find(open_nodes_map, map[iDY][iDX]) || (find(closed_nodes_map, map[iDY][iDX]))))
+			if ((find(open_nodes_map, iDX, iDY) || (find(closed_nodes_map, iDX, iDY))))
 			{
-				int ListIndex = findTile(open_nodes_map, map[iDY][iDX]);
+				int ListIndex = findTile(open_nodes_map, iDX, iDY);
 				if (ListIndex > -1)
 				{
-					if (newCost < open_nodes_map[ListIndex]->g)
+					//newg = n.g + cost(n,n')
+					double newCost = current.g + (int)open_nodes_map[ListIndex].typeID;
+
+					if (newCost < open_nodes_map[ListIndex].g)
 					{
 						//openList[tempIndex].g = currentG;
 						//openList[tempIndex].f = openList[tempIndex].h + openList[tempIndex].g;
 						//openList[tempIndex].parentX = tempTile.xCoord;
 						//openList[tempIndex].parentY = tempTile.yCoord;
-						open_nodes_map[ListIndex]->g = newCost;
-						open_nodes_map[ListIndex]->priority = open_nodes_map[ListIndex]->h + open_nodes_map[ListIndex]->g;
-						open_nodes_map[ListIndex]->parent = map[current->y][current->x];
+						open_nodes_map[ListIndex].g = newCost + dCost[index];
+						open_nodes_map[ListIndex].priority = open_nodes_map[ListIndex].h + open_nodes_map[ListIndex].g;
+						open_nodes_map[ListIndex].xParent = current.x;
+						open_nodes_map[ListIndex].yParent = current.y;
 
 					}
 					continue;
 				}
 
 
-				ListIndex = findTile(closed_nodes_map, map[iDY][iDX]);
+				ListIndex = findTile(closed_nodes_map, iDX, iDY);
 				if (ListIndex > -1)
 				{
-					if (newCost < closed_nodes_map[ListIndex]->g)
+					//newg = n.g + cost(n,n')
+					double newCost = current.g + (int)closed_nodes_map[ListIndex].typeID;
+					if (newCost < closed_nodes_map[ListIndex].g)
 					{
 						//openList[tempIndex].g = currentG;
 						//openList[tempIndex].f = openList[tempIndex].h + openList[tempIndex].g;
 						//openList[tempIndex].parentX = tempTile.xCoord;
 						//openList[tempIndex].parentY = tempTile.yCoord;
-						open_nodes_map[ListIndex]->g = newCost;
-						open_nodes_map[ListIndex]->priority = open_nodes_map[ListIndex]->h + open_nodes_map[ListIndex]->g;
-						open_nodes_map[ListIndex]->parent = map[current->y][current->x];
+						closed_nodes_map[ListIndex].g = newCost + dCost[index];
+						closed_nodes_map[ListIndex].priority = closed_nodes_map[ListIndex].h + closed_nodes_map[ListIndex].g;
+						closed_nodes_map[ListIndex].xParent = current.x;
+						closed_nodes_map[ListIndex].yParent = current.y;
 
-						open_nodes_map.push_back(closed_nodes_map[ListIndex]);
+						closed_nodes_map.push_back(closed_nodes_map[ListIndex]);
 						closed_nodes_map.erase(closed_nodes_map.begin() + ListIndex);
 					}
 					continue;
@@ -327,54 +327,45 @@ void MazMap::aStarPathFind()
 			}
 			else
 			{
-
+				Node neighborsNode;
+				neighborsNode.x = iDX;
+				neighborsNode.y = iDY;
+				neighborsNode.typeID = map[iDY][iDX]->typeID;
+				neighborsNode.xParent = current.x;
+				neighborsNode.yParent = current.y;
+				//newg = n.g + cost(n,n')
+				double newCost = current.g + (int)neighborsNode.typeID;
 				//n'.parent = n
-				map[iDY][iDX]->parent = map[current->y][current->x];
+				//neighborsNode.parent = &current;
 				//n'.g = newg
-				map[iDY][iDX]->g = newCost;
+				neighborsNode.g = newCost + dCost[index];
 				//n'.h = GoalDistEstimate( n' )//Heuristic(current, map[iDY][iDX]);
-				map[iDY][iDX]->h = abs(map[iDY][iDX]->x - current->x) + abs(map[iDY][iDX]->y - current->y);
+				neighborsNode.h = abs(exit.x - neighborsNode.x) + abs(exit.y - neighborsNode.y);
 
 				//n'.f = n'.g + n'.h
-				map[iDY][iDX]->priority = map[iDY][iDX]->g + map[iDY][iDX]->h;
+				neighborsNode.priority = neighborsNode.g + neighborsNode.h;
 
-				open_nodes_map.push_back(map[iDY][iDX]);
-				if (find(closed_nodes_map, map[iDY][iDX]))
-					closed_nodes_map.erase(closed_nodes_map.begin() + findTile(closed_nodes_map, map[iDY][iDX]));
-				////if n' is in Closed
-				//if (find(closed_nodes_map, map[iDY][iDX]))
-				//{
-				//	//remove it from Closed
-				//	//closed_nodes_map.erase(closed_nodes_map + )
-				//	closed_nodes_map.erase(closed_nodes_map.begin() + findTile(closed_nodes_map, map[iDY][iDX]));
-				//}
-				////if n' is not yet in Open
-				//if (!find(open_nodes_map, map[iDY][iDX]))
-				//{
-				//	//push n' on Open
-				//	open_nodes_map.push_back(map[iDY][iDX]);
-				//	selectionSort(open_nodes_map, open_nodes_map.size());
-				//	//std::sort(open_nodes_map.begin(), open_nodes_map.end(),greater);
-				//}
-
+				open_nodes_map.push_back(neighborsNode);
+				if (find(closed_nodes_map, neighborsNode))
+					closed_nodes_map.erase(closed_nodes_map.begin() + findTile(closed_nodes_map, neighborsNode));
 			}
 		}
 		//push n onto Closed
 		selectionSort(open_nodes_map, open_nodes_map.size());
-		if (!find(closed_nodes_map, map[current->y][current->x]))
-			closed_nodes_map.push_back(map[current->y][current->x]);
+		if (!find(closed_nodes_map, current))
+			closed_nodes_map.push_back(current);
 	}
 	return;
 }
 
-void MazMap::swap(Tile &xp, Tile &yp)
+void MazMap::swap(Node *xp, Node *yp)
 {
-	Tile temp = xp;
-	xp = yp;
-	yp = temp;
+	Node temp = *xp;
+	*xp = *yp;
+	*yp = temp;
 }
 
-void MazMap::selectionSort(std::vector<Tile*> &arr, int n)
+void MazMap::selectionSort(std::vector<Node> &arr, int n)
 {
 	int i, j, min_idx;
 
@@ -384,13 +375,13 @@ void MazMap::selectionSort(std::vector<Tile*> &arr, int n)
 		// Find the minimum element in unsorted array 
 		min_idx = i;
 		for (j = i + 1; j < n; j++)
-			if (arr[j]->priority < arr[min_idx]->priority)
+			if (arr[j].priority < arr[min_idx].priority)
 				min_idx = j;
 
 		// Swap the found minimum element with the first element 
-		//Tile* temp = open_nodes_map[min_idx];
-		//open_nodes_map[min_idx] = open_nodes_map[i];
-		//open_nodes_map[i] = temp;
-		swap(*arr[min_idx], *arr[i]);
+		Node temp = arr[min_idx];
+		arr[min_idx] = arr[i];
+		arr[i] = temp;
+		//swap(arr[min_idx], arr[i]);
 	}
 }

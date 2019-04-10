@@ -224,8 +224,7 @@ void solveMap()
 	//	"Couldn't find the end.";
 	//infoTxt += map->pathFind(map->rover.x,map->rover.y,map->exit.x,map->exit.y);
 	map->aStarPathFind();
-	int x = 0;
-	x++;
+
 	//Finish counting
 	auto finish = std::chrono::high_resolution_clock::now();
 	//Print the time needed to find the game
